@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torchvision import datasets, transforms
+from torch import optim
 
 # class Classifier(nn.Module):
 #     def __init__(self):
@@ -20,6 +22,11 @@ import torch.nn.functional as F
 # model = Classifier()
 # print(model)
 
+transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
+
+trainset = datasets.MNIST('MNIST', download=True, train=True, transform=transform)
+trainloader = torch.utils.data.DataLoader(trainset, batch_size=64, shuffle=True)
+
 model = nn.Sequential(nn.Linear(784, 256),
                         nn.ReLU(),
                         nn.Linear(256, 64),
@@ -27,12 +34,22 @@ model = nn.Sequential(nn.Linear(784, 256),
                         nn.Linear(64, 10),
                         nn.LogSoftmax(dim=1))
 
+epochs = 5
+optimizer = optim.SGD(model.parameters(), lr=0.003)
 criterion = nn.NLLLoss()
 
-images = images.view(images.shape[0], -1)
-logits = model(images)
-loss = criterion(logits, labels)
+for i in range(epochs):
+    running_loss = 0
+    for images, labels in trainloader:
+        image = images.view(images.shape[0], -1)
+        optimizer.zero_grad()
 
-model[0].weight.grad
-loss.backward()
-model[0].weight.grad
+        logits = model.forward(image)
+        loss = criterion(logits, labels)
+
+        loss.backward()
+        optimizer.step()
+
+        running_loss += loss.item()
+    
+    print(f'Running Loss : {running_loss/64}')
