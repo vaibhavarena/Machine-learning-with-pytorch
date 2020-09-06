@@ -21,7 +21,7 @@ model = nn.Sequential(nn.Linear(784, 256),
                         nn.Linear(64, 10),
                         nn.LogSoftmax(dim=1))
 
-
+# Accuracy function for single batch
 def accuracy(text = "Accuracy : "):
     image, label = next(iter(testloader))
     with torch.no_grad():
