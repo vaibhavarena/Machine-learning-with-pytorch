@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import matplotlib.pyplot as plt
 from torch import optim
 from torchvision import datasets, transforms
 
@@ -38,10 +39,14 @@ def accuracy(text = "Accuracy : "):
 
 accuracy("Accuracy before training : ")
 
+train = []
+test = []
+accu = []
+
 criterion = nn.NLLLoss()
 optimizer = optim.SGD(model.parameters(), lr=0.003)
 
-epochs = 5
+epochs = 10
 
 for i in range(epochs):
     running_loss = 0
@@ -57,6 +62,7 @@ for i in range(epochs):
         optimizer.step()
 
         running_loss += loss.item()
+    
 
     else:
         test_loss = 0 
@@ -70,16 +76,27 @@ for i in range(epochs):
 
                 loss = criterion(output, labels)
                 test_loss += loss.item()
+
                 ps = torch.exp(output)
                 top_p, top_class = ps.topk(1, dim=1)
 
                 equals = top_class == labels.view(*top_class.shape)
 
                 accuracy += torch.mean(equals.type(torch.FloatTensor))
+        
+        
+            train.append(running_loss/len(trainloader))
+            test.append(test_loss/len(testloader))
+            accu.append(accuracy/len(testloader))
 
-
+    print("Epochs : {}/{}".format(i+1, epochs))
     print(f"Training loss : {running_loss/len(trainloader)}")
     print(f"Test loss : {test_loss/len(testloader)}")
     print(f"Accuracy : {(accuracy/len(testloader)) * 100}")
     print()
 
+plt.plot(train, label='Training loss')
+plt.plot(test, label='Test loss')
+plt.plot(accu, label='Accuracy')
+plt.legend(frameon=False)
+plt.show()
