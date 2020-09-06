@@ -17,8 +17,10 @@ i,l = next(iter(trainloader))
 
 model = nn.Sequential(nn.Linear(784, 256),
                         nn.ReLU(),
+                        nn.Dropout(p=0.2),
                         nn.Linear(256, 64),
                         nn.ReLU(),
+                        nn.Dropout(p=0.2),
                         nn.Linear(64, 10),
                         nn.LogSoftmax(dim=1))
 
@@ -36,6 +38,27 @@ def accuracy(text = "Accuracy : "):
 
         print(f"{text}{accuracy.item() * 100}")
         print()
+
+
+def save_model(name='fashion.pth', input_layers=None, output_layers=None, model=model):
+    checkpoint = {'input_layers':input_layers,
+                'output_layers':output_layers,
+                'hidden_layers':[i.out_features for i in model.hidden_layers],
+                'state_dict':model.state_dict()}
+
+    torch.save(checkpoint, name)
+
+
+def load_model(name='fashion.pth', model=model):
+    checkpoint = torch.load(name)
+
+    input_layers = checkpoint['input_layers']
+    output_layers = checkpoint['output_layers']
+    hidden_layers = checkpoint['hidden_layers']
+
+    state = torch.load(checkpoint['state_dict'])
+    model.load_state_dict(state)
+
 
 accuracy("Accuracy before training : ")
 
@@ -69,6 +92,7 @@ for i in range(epochs):
         accuracy = 0
 
         with torch.no_grad():
+            model.eval()
             for images, labels in testloader:
                 image = images.view(images.shape[0], -1)
 
@@ -84,7 +108,8 @@ for i in range(epochs):
 
                 accuracy += torch.mean(equals.type(torch.FloatTensor))
         
-        
+            model.train()
+
             train.append(running_loss/len(trainloader))
             test.append(test_loss/len(testloader))
             accu.append(accuracy/len(testloader))
@@ -94,6 +119,8 @@ for i in range(epochs):
     print(f"Test loss : {test_loss/len(testloader)}")
     print(f"Accuracy : {(accuracy/len(testloader)) * 100}")
     print()
+
+save_model()
 
 plt.plot(train, label='Training loss')
 plt.plot(test, label='Test loss')
