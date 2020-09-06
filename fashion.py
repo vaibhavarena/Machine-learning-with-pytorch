@@ -12,7 +12,6 @@ testdata = datasets.FashionMNIST('FashionMNIST', download=True, train=False, tra
 testloader = torch.utils.data.DataLoader(testdata, batch_size=64, shuffle=True)
 
 i,l = next(iter(trainloader))
-print(i.shape)
 
 
 model = nn.Sequential(nn.Linear(784, 256),
@@ -22,11 +21,11 @@ model = nn.Sequential(nn.Linear(784, 256),
                         nn.Linear(64, 10),
                         nn.LogSoftmax(dim=1))
 
-def accuracy():
+
+def accuracy(text = "Accuracy : "):
     image, label = next(iter(testloader))
     with torch.no_grad():
         output = model(image.view(image.shape[0], -1))
-        print(output.shape)
         output = torch.exp(output)
 
         top_p, output_class = output.topk(1, dim=1)
@@ -35,9 +34,10 @@ def accuracy():
 
         accuracy = torch.mean(equal.type(torch.FloatTensor))
 
-        print(f"Accuracy : {accuracy.item() * 100}")
-        
-accuracy()
+        print(f"{text}{accuracy.item() * 100}")
+        print()
+
+accuracy("Accuracy before training : ")
 
 criterion = nn.NLLLoss()
 optimizer = optim.SGD(model.parameters(), lr=0.003)
@@ -59,6 +59,28 @@ for i in range(epochs):
 
         running_loss += loss.item()
 
-    print(f"Running loss : {running_loss/len(trainloader)}")
+    else:
+        test_loss = 0 
+        accuracy = 0
 
-accuracy() 
+        with torch.no_grad():
+            for images, labels in testloader:
+                image = images.view(images.shape[0], -1)
+
+                output = model(image)
+
+                loss = criterion(output, labels)
+                test_loss += loss.item()
+                ps = torch.exp(output)
+                top_p, top_class = ps.topk(1, dim=1)
+
+                equals = top_class == labels.view(*top_class.shape)
+
+                accuracy += torch.mean(equals.type(torch.FloatTensor))
+
+
+    print(f"Training loss : {running_loss/len(trainloader)}")
+    print(f"Test loss : {test_loss/len(testloader)}")
+    print(f"Accuracy : {(accuracy/len(testloader)) * 100}")
+    print()
+
